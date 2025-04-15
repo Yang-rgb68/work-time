@@ -1,0 +1,54 @@
+// pages/index/index.js
+Page({
+  data: {
+    records: [],
+    totalMinutes: 0,
+    endTime: '16:30'
+  },
+  
+  onLoad() {
+    this.loadRecords();
+  },
+  
+  loadRecords() {
+    const records = wx.getStorageSync('workRecords') || [];
+    const totalMinutes = records.reduce((sum, r) => sum + r.minutes, 0);
+    this.setData({ records, totalMinutes });
+  },
+  
+  bindTimeChange(e) {
+    this.setData({ endTime: e.detail.value });
+  },
+  
+  recordTime() {
+    const [hour, minute] = this.data.endTime.split(':').map(Number);
+    const workMinutes = (hour * 60 + minute) - (6 * 60);
+    const dateStr = new Date().toLocaleDateString();
+    
+    let records = wx.getStorageSync('workRecords') || [];
+    const index = records.findIndex(r => r.date === dateStr);
+    
+    if (index >= 0) {
+      records[index] = { date: dateStr, endTime: this.data.endTime, minutes: workMinutes };
+    } else {
+      records.push({ date: dateStr, endTime: this.data.endTime, minutes: workMinutes });
+    }
+    
+    wx.setStorageSync('workRecords', records);
+    this.loadRecords();
+    wx.showToast({ title: '打卡成功' });
+  },
+  
+  clearData() {
+    wx.showModal({
+      title: '确认清除',
+      content: '确定要清除所有记录吗？',
+      success: (res) => {
+        if (res.confirm) {
+          wx.removeStorageSync('workRecords');
+          this.loadRecords();
+        }
+      }
+    });
+  }
+})
